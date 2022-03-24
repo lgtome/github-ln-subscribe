@@ -20,6 +20,15 @@ function injectCode(src) {
 injectCode(chrome.runtime.getURL('/myscript.js'))
 
 const config = { attributes: true, childList: true, subtree: true }
+let GLOBAL_LIST
+const mutationObserverCallback = function (mutationsList, observer) {
+    unSubscribe()
+    GLOBAL_LIST = linkedInGetButtonsList()
+    subscribe(linkedInGetButtonsList())
+}
+const observer = new MutationObserver(mutationObserverCallback)
+
+awaitLoadDocument()
 
 function EventEmitter() {
     const list = []
@@ -27,13 +36,11 @@ function EventEmitter() {
     return {
         subscribe(cb, id) {
             list.push({ callback: cb, id })
-            console.log(list, 'event emitter list')
         },
         emit() {
             list.forEach(({ callback, id }) => {
                 callback()
             })
-            console.log(list, 'event emitter list EMIT METHOD')
         },
         unSubscribe(id) {
             const childIndex = list.indexOf((el) => el.id === id)
@@ -45,50 +52,30 @@ function EventEmitter() {
 }
 const eventEmitter = EventEmitter()
 
-const mutationObserverCallback = function (mutationsList, observer) {
-    unSubscribe()
-    console.log(linkedInGetButtonsList())
-    subscribe(linkedInGetButtonsList())
-}
-const observer = new MutationObserver(mutationObserverCallback)
-
-const list = document.querySelectorAll('input[value="Follow"]')
-let LINKED_IN_NODE_LIST
-awaitLoadDocument()
-subscribe(list)
 function awaitLoadDocument() {
+    const list = document.querySelectorAll('input[value="Follow"]')
+    GLOBAL_LIST = list
+    subscribe(list)
     let intervalId
     intervalId = setInterval(() => {
         const linkedInList = linkedInGetButtonsList()
         if (!!Array.from(linkedInList).length) {
-            console.log('hello from interval')
+            GLOBAL_LIST = linkedInList
             clearInterval(intervalId)
             subscribe(linkedInList)
             chrome.storage.local.set({ host: window.location.host })
-            const ul = document.querySelector(
-                '.discover-fluid-entity-list.discover-fluid-entity-list--default-width-cards'
-            )
+            const ul =
+                document.querySelector(
+                    '.discover-fluid-entity-list.discover-fluid-entity-list--default-width-cards'
+                ) || false
             eventEmitter.subscribe(() => {
-                observer.observe(ul, config)
+                if (ul) {
+                    observer.observe(ul, config)
+                }
             }, 1)
             setTimeout(() => {
-                console.log('timeout work')
                 eventEmitter.emit()
-            })
-            // const seeAllButton = document.querySelector(
-            //     'button[aria-label^="See all"'
-            // )
-            // seeAllButton.addEventListener('click', () => {
-            //     let timeoutId
-            //     timeoutId = setTimeout(() => {
-            //         LINKED_IN_NODE_LIST = linkedInGetButtonsList()
-            //         const ul = document.querySelector(
-            //             '.discover-fluid-entity-list.discover-fluid-entity-list--default-width-cards'
-            //         )
-            //         observer.observe(ul, config)
-            //         clearTimeout(timeoutId)
-            //     }, 2000)
-            // })
+            }, 100)
         }
     }, 2000)
 }
@@ -100,16 +87,25 @@ function emitClick(nodeList) {
     nodeList.forEach((node) => node.click())
 }
 function handler(list) {
+    console.log(list, 'hello from handler')
     return (changes, namespace) => {
         if (changes.isClicked?.newValue?.value) {
-            emitClick(list)
+            console.log('click work hello', list)
+            // emitClick(list)
             chrome.storage.local.set({ isClicked: { value: false } })
         }
     }
 }
-function subscribe(list) {
-    chrome.storage.onChanged.addListener(handler(list))
+function handler2(changes, namespace) {
+    if (changes.isClicked?.newValue?.value) {
+        //TODO: add location
+        emitClick(list)
+        chrome.storage.local.set({ isClicked: { value: false } })
+    }
+}
+function subscribe() {
+    chrome.storage.onChanged.addListener(handler2)
 }
 function unSubscribe() {
-    chrome.storage.onChanged.removeListener(handler())
+    chrome.storage.onChanged.removeListener(handler2)
 }
