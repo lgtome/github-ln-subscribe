@@ -1,0 +1,26 @@
+{
+    "name": "Github | LN subscribe",
+    "description": "Subscribe to all github users on the current page",
+    "version": "1.0",
+    "manifest_version": 3,
+    "background": {
+        "service_worker": "background.js"
+    },
+    "permissions": ["activeTab", "storage"],
+    "content_scripts": [
+        {
+            "matches": ["https://*/*", "https://github.com/*"],
+            "js": ["contentscript.js"],
+            "run_at": "document_end"
+        }
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": ["inject.js"],
+            "matches": ["https://*/*"]
+        }
+    ],
+    "action": {
+        "default_popup": "main.html"
+    }
+}
