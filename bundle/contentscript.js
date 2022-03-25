@@ -8,7 +8,6 @@ function injectCode(src) {
     // This is why it works!
     script.src = src
     script.onload = function () {
-        console.log('script injected')
         this.remove()
     }
 
@@ -54,11 +53,14 @@ const eventEmitter = EventEmitter()
 
 function awaitLoadDocument() {
     const list = document.querySelectorAll('input[value="Follow"]')
-    GLOBAL_LIST = list
-    subscribe(list)
     let intervalId
+    let counter = 0
+    GLOBAL_LIST = list
+    subscribe()
     intervalId = setInterval(() => {
         const linkedInList = linkedInGetButtonsList()
+        counter++
+        if (counter >= 10) clearInterval(intervalId)
         if (!!Array.from(linkedInList).length) {
             GLOBAL_LIST = linkedInList
             clearInterval(intervalId)
@@ -86,26 +88,25 @@ function linkedInGetButtonsList() {
 function emitClick(nodeList) {
     nodeList.forEach((node) => node.click())
 }
-function handler(list) {
-    console.log(list, 'hello from handler')
+function DEPRECATED_HANDLER(list) {
     return (changes, namespace) => {
         if (changes.isClicked?.newValue?.value) {
-            console.log('click work hello', list)
-            // emitClick(list)
+            emitClick(list)
             chrome.storage.local.set({ isClicked: { value: false } })
         }
     }
 }
-function handler2(changes, namespace) {
+function handler(changes, namespace) {
     if (changes.isClicked?.newValue?.value) {
         //TODO: add location
-        emitClick(list)
+        emitClick(GLOBAL_LIST)
         chrome.storage.local.set({ isClicked: { value: false } })
     }
 }
+
 function subscribe() {
-    chrome.storage.onChanged.addListener(handler2)
+    chrome.storage.onChanged.addListener(handler)
 }
 function unSubscribe() {
-    chrome.storage.onChanged.removeListener(handler2)
+    chrome.storage.onChanged.removeListener(handler)
 }

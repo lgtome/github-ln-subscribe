@@ -4,23 +4,28 @@
     "version": "1.0",
     "manifest_version": 3,
     "background": {
-        "service_worker": "background.js"
+        "service_worker": "./bundle/background.js"
     },
-    "permissions": ["activeTab", "storage"],
+    "permissions": ["storage"],
     "content_scripts": [
         {
-            "matches": ["https://*/*", "https://github.com/*"],
-            "js": ["contentscript.js"],
+            "matches": ["https://www.linkedin.com/*", "https://github.com/*"],
+            "js": ["./bundle/contentscript.js"],
             "run_at": "document_end"
         }
     ],
     "web_accessible_resources": [
         {
-            "resources": ["inject.js"],
+            "resources": ["./bundle/inject.js"],
             "matches": ["https://*/*"]
         }
     ],
     "action": {
-        "default_popup": "main.html"
+        "default_popup": "./bundle/main.html"
+    },
+    "icons": {
+        "16": "./bundle/assets/all.png",
+        "48": "./bundle/assets/all.png",
+        "128": "./bundle/assets/all.png"
     }
 }
